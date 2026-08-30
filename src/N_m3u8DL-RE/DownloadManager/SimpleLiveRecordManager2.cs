@@ -188,6 +188,22 @@ internal class SimpleLiveRecordManager2
         if (!Directory.Exists(tmpDir)) Directory.CreateDirectory(tmpDir);
         if (!Directory.Exists(saveDir)) Directory.CreateDirectory(saveDir);
 
+        // DEIQ/SM4 就地解密：仅提示一次，逐分片记录见日志文件
+        var liveSegMethod = streamSpec.Playlist?.MediaParts.First().MediaSegments.FirstOrDefault()?.EncryptInfo.Method;
+        if (liveSegMethod == Common.Enum.EncryptMethod.DEIQ)
+        {
+            Logger.InfoMarkUp("[grey]DEIQ 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+        else if (liveSegMethod == Common.Enum.EncryptMethod.SM4)
+        {
+            Logger.InfoMarkUp("[grey]SM4 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+        else if (liveSegMethod == Common.Enum.EncryptMethod.AES_128_YK
+                 || liveSegMethod == Common.Enum.EncryptMethod.DEYK)
+        {
+            Logger.InfoMarkUp("[grey]优酷 AES_128_YK / DEYK 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+
         while (true && await source.OutputAvailableAsync())
         {
             // 接收新片段 且总是拿全部未处理的片段

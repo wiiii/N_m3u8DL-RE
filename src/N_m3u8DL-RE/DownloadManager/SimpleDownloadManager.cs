@@ -155,6 +155,23 @@ internal class SimpleDownloadManager
             Logger.WarnMarkUp($"[darkorange3_1]{ResString.autoBinaryMerge4}[/]");
         }
 
+        // DEIQ/SM4 就地解密：每个分片下载后自动解密，仅在开始时提示一次，逐分片记录见日志文件
+        var segMethod = segments.FirstOrDefault()?.EncryptInfo.Method
+                        ?? streamSpec.Playlist?.MediaParts.First().MediaSegments.FirstOrDefault()?.EncryptInfo.Method;
+        if (segMethod == Common.Enum.EncryptMethod.DEIQ)
+        {
+            Logger.InfoMarkUp("[grey]DEIQ 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+        else if (segMethod == Common.Enum.EncryptMethod.SM4)
+        {
+            Logger.InfoMarkUp("[grey]SM4 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+        else if (segMethod == Common.Enum.EncryptMethod.AES_128_YK
+                 || segMethod == Common.Enum.EncryptMethod.DEYK)
+        {
+            Logger.InfoMarkUp("[grey]优酷 AES_128_YK / DEYK 就地解密已启用，分片下载完成后自动解密（逐分片记录见日志文件）[/]");
+        }
+
         // 下载init
         if (streamSpec.Playlist?.MediaInit != null)
         {

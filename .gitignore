@@ -369,3 +369,9 @@ FodyWeavers.xsd
 
 # macOS shit
 .DS_Store
+
+# WorkBuddy 项目记忆（本地工具目录，不入库）
+.workbuddy/
+
+# 本地调试工作目录
+.ykwork/

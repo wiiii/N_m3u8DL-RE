@@ -56,6 +56,57 @@ internal class SimpleDownloader : IDownloader
                 case EncryptMethod.SAMPLE_AES_CTR:
                     // throw new NotSupportedException("SAMPLE-AES-CTR");
                     break;
+                case EncryptMethod.DEIQ:
+                {
+                    var key = segment.EncryptInfo.Key;
+                    if (key == null || key.Length != 16)
+                        throw new Exception("DEIQ 解密需要提供 16 字节的 --custom-hls-key（HEX 或 Base64）");
+                    var fileBytes = File.ReadAllBytes(dResult.ActualFilePath);
+                    var decrypted = DeiqUtil.DecryptIqyTs(fileBytes, key);
+                    await File.WriteAllBytesAsync(dResult.ActualFilePath, decrypted);
+                    // 每个分片一条，改为仅写日志文件，避免逐分片刷屏（且裸 Console.WriteLine 会被进度条渲染冲掉，在终端上显示为空行）
+                    Logger.Extra("DEIQ 分片已就地解密");
+                    break;
+                }
+                case EncryptMethod.SM4:
+                {
+                    var key = segment.EncryptInfo.Key;
+                    var iv = segment.EncryptInfo.IV;
+                    if (key == null || key.Length != 16)
+                        throw new Exception("SM4 解密需要提供 16 字节的 --custom-hls-key（HEX 或 Base64）");
+                    if (iv == null || iv.Length != 16)
+                        throw new Exception("SM4-CBC 解密需要提供 16 字节的 --custom-hls-iv（HEX 或 Base64）");
+                    var fileBytes = File.ReadAllBytes(dResult.ActualFilePath);
+                    var decrypted = SM4Util.DecryptCbc(fileBytes, key, iv);
+                    await File.WriteAllBytesAsync(dResult.ActualFilePath, decrypted);
+                    // 同上：仅写日志文件，避免逐分片刷屏
+                    Logger.Extra("SM4 分片已就地解密");
+                    break;
+                }
+                case EncryptMethod.AES_128_YK:
+                {
+                    var key = segment.EncryptInfo.Key;
+                    if (key == null || key.Length != 16)
+                        throw new Exception("AES_128_YK 解密需要提供 16 字节的 --custom-hls-key（HEX 形式 32 字符）");
+                    var fileBytes = File.ReadAllBytes(dResult.ActualFilePath);
+                    var decrypted = YkUtil.DecryptYkTs(fileBytes, key);
+                    await File.WriteAllBytesAsync(dResult.ActualFilePath, decrypted);
+                    Logger.Extra("AES_128_YK 分片已就地解密");
+                    break;
+                }
+                case EncryptMethod.DEYK:
+                {
+                    // DEYK 与 AES_128_YK 同算法，密钥形式为 Base64。
+                    // --custom-hls-key 解析器已支持 Base64，会拿到 16 字节。
+                    var key = segment.EncryptInfo.Key;
+                    if (key == null || key.Length != 16)
+                        throw new Exception("DEYK 解密需要提供 16 字节的 --custom-hls-key（Base64 形式）");
+                    var fileBytes = File.ReadAllBytes(dResult.ActualFilePath);
+                    var decrypted = YkUtil.DecryptYkTs(fileBytes, key);
+                    await File.WriteAllBytesAsync(dResult.ActualFilePath, decrypted);
+                    Logger.Extra("DEYK 分片已就地解密");
+                    break;
+                }
             }
 
             // Image头处理
